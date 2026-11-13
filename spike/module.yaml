@@ -1,0 +1,13 @@
+product: jvm/app
+
+dependencies:
+  - $compose.desktop.currentOs
+  - $compose.foundation
+  - $compose.material3
+  - $compose.ui
+  - $libs.kotlinx.coroutines.swing
+
+settings:
+  compose: enabled
+  jvm:
+    mainClass: io.ukata.athena.spike.MainKt
