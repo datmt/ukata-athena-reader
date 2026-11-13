@@ -28,5 +28,5 @@ Results and decisions: `spike/RESULTS.md`.
 
 ### Next
 1. Human check of spike 1 (`./kotlin run -m spike`; drag, auto-scroll, double/triple/shift-click, `-Dsun.java2d.uiScale=1.5`).
-2. Spikes 2, 3, 6 done. Next: Mermaid, JLaTeXMath, Room+FTS5, packaging.
+2. Spikes 2, 3, 6 done. Next: Mermaid (4), JLaTeXMath (5), packaging (7).
 3. Open questions: test corpus (public-domain vs own files), spike time-box (proposed 1-2 weeks).
