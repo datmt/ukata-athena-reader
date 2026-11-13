@@ -32,7 +32,11 @@ Results and decisions: `spike/RESULTS.md`.
 
 - Spike 7: `packaging/linux/build.sh` (jar -> jlink -> jpackage app-image -> hand-built .deb + tar.gz), run locally (no CI). arm64 spike app: image 101 MB, .deb 73 MB. Amper executable-jar bug: same-named jars from different groups collide (stub `runtime-desktop` won), script rebuilds lib set. `packaging/linux/appimage.sh <arch>` makes AppImages (aarch64 native: 76 MB, runs to Compose; x86_64 cross-assembled from Temurin x64 JRE + x64 Skiko jar: 95 MB, **untested, needs an x64 host**, un-jlinked so larger).
 
+- Spike launcher: packaged app opens tabs (Selection, EPUB via Open..., Mermaid, Math). Human check of the arm64 AppImage: math and mermaid render OK. **Feedback: text is painfully small** (demo fonts 17sp, no UI scale/HiDPI handling; fix with a reader font-size setting and a density/uiScale check in M1). No library management yet (that is M1, FR-001..006).
+- Jenkins build to be set up by the user (x64 AppImage build + smoke test, R2 upload, README/release page deferred until then).
+
 ### Next
+0. Wrap-up state: M0 spikes 1-7 built and packaged; remaining human checks (1, 3, 8, x64 AppImage), then record M0 go/no-go in RESULTS.md and plan M1 (library: Room schema, import, library UI, reader position) before coding.
 1. Human check of spike 1 (`./kotlin run -m spike`; drag, auto-scroll, double/triple/shift-click, `-Dsun.java2d.uiScale=1.5`).
 2. Spikes 2, 3, 6 done. Next: packaging (7). Human look at spike 4 and 5 demos.
 3. Open questions: test corpus (public-domain vs own files), spike time-box (proposed 1-2 weeks).
