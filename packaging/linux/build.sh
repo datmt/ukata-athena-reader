@@ -20,6 +20,7 @@ for f in "$OUT"/in/*.jar; do
 done
 cp "build/tasks/_${MOD}_jarJvm/${MOD}-jvm.jar" "$OUT/in/app.jar"
 MAIN=$(unzip -p "build/tasks/_${MOD}_executableJarJvm/${MOD}-jvm-executable.jar" META-INF/MANIFEST.MF | tr -d '\r' | sed -n 's/^Start-Class: //p')
+echo "$MAIN" > "$OUT/mainclass"
 MODS=$("$JAVA_HOME/bin/jdeps" --multi-release 25 --ignore-missing-deps --print-module-deps --class-path "$OUT/in/*" "$OUT/in/app.jar"),jdk.unsupported
 "$JAVA_HOME/bin/jlink" --add-modules "$MODS" --strip-debug --no-header-files --no-man-pages --compress zip-6 --output "$OUT/rt"
 "$JAVA_HOME/bin/jpackage" --type app-image --name "$NAME" --app-version "$VER" --input "$OUT/in" \

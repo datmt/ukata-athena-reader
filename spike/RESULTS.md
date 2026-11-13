@@ -42,3 +42,4 @@
 - Gotcha: Amper `executable-jar` flattens libs by filename; androidx vs org.jetbrains `runtime-desktop` collide and the stub wins -> `NoClassDefFoundError: Composer`. Script picks the largest jar per name.
 - Launch reaches Compose (headless box: HeadlessException only). Startup time / RSS not measured (no display here); human check.
 - **Open:** AppImage needs `appimagetool` download (needs approval); x64 build needs an x64 machine (jlink/jpackage are per-arch, no cross); `.deb` Depends list untested on a clean system.
+- AppImage: appimagetool (aarch64/x86_64) with `--appimage-extract-and-run`; aarch64 76 MB runs. x86_64: jlink/jpackage can't cross and Temurin ships no jmods, so the x64 image uses the full Temurin 25 JRE (192 MB unpacked) + x64 Skiko jar + launcher script; rebuild with build.sh on an x64 host to get the trimmed one. Placeholder 1x1 icon.

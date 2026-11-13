@@ -10,7 +10,7 @@
 | 4 | Mermaid subset (ELK vs in-house) | done: in-house; parser+layout tests green; awaiting human look |
 | 5 | JLaTeXMath | done; tests green; awaiting human look |
 | 6 | Room + FTS5 | done (linux-arm64; other OS unverified) |
-| 7 | AppImage/.deb + resource targets | .deb + tar.gz (arm64) built locally; AppImage + x64 pending |
+| 7 | AppImage/.deb + resource targets | .deb + tar.gz + AppImage (arm64) built locally; x86_64 AppImage cross-assembled, untested |
 | 8 | Wayland/X11 + HiDPI | human check |
 
 Results and decisions: `spike/RESULTS.md`.
@@ -30,7 +30,7 @@ Results and decisions: `spike/RESULTS.md`.
 
 - Spike 5: JLaTeXMath 1.0.7 (670 KB jar, only new dep) → ARGB bitmap → Compose `Image` (`spike/src/math/`). 3 tests green, ~0.5 ms/formula warm. Run: `./kotlin run -m spike -- math`.
 
-- Spike 7: `packaging/linux/build.sh` (jar -> jlink -> jpackage app-image -> hand-built .deb + tar.gz), run locally (no CI). arm64 spike app: image 101 MB, .deb 73 MB. Amper executable-jar bug: same-named jars from different groups collide (stub `runtime-desktop` won), script rebuilds lib set. Releases are uploaded with `gh release create`.
+- Spike 7: `packaging/linux/build.sh` (jar -> jlink -> jpackage app-image -> hand-built .deb + tar.gz), run locally (no CI). arm64 spike app: image 101 MB, .deb 73 MB. Amper executable-jar bug: same-named jars from different groups collide (stub `runtime-desktop` won), script rebuilds lib set. `packaging/linux/appimage.sh <arch>` makes AppImages (aarch64 native: 76 MB, runs to Compose; x86_64 cross-assembled from Temurin x64 JRE + x64 Skiko jar: 95 MB, **untested, needs an x64 host**, un-jlinked so larger).
 
 ### Next
 1. Human check of spike 1 (`./kotlin run -m spike`; drag, auto-scroll, double/triple/shift-click, `-Dsun.java2d.uiScale=1.5`).
