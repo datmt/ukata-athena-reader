@@ -42,5 +42,5 @@ D
 base64 -d > "$A/$NAME.png" <<'P'
 iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==
 P
-ARCH=$ARCH "${APPIMAGETOOL_DIR:?}/appimagetool-$HOSTARCH.AppImage" --appimage-extract-and-run --comp zstd "$A" "$OUT/${NAME}-${VER}-${ARCH}.AppImage"
+ARCH=$ARCH "${APPIMAGETOOL_DIR:?}/appimagetool-$HOSTARCH.AppImage" --appimage-extract-and-run --comp zstd ${APPIMAGE_RUNTIME_DIR:+--runtime-file "$APPIMAGE_RUNTIME_DIR/runtime-$ARCH"} "$A" "$OUT/${NAME}-${VER}-${ARCH}.AppImage"
 ls -la "$OUT"/*.AppImage

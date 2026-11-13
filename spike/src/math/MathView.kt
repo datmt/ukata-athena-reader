@@ -33,16 +33,17 @@ fun MathView(latex: String, display: Boolean, fontSizeSp: Float = 18f, modifier:
 
 /** Run: `./kotlin run -m spike -- math` */
 fun mathDemo() = application {
-    Window(onCloseRequest = ::exitApplication, title = "spike: math") {
-        MaterialTheme {
-            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Text("Inline: Euler "); MathView("e^{i\\pi}+1=0", false); Text(" and "); MathView("\\sum_{k=1}^n k^2", false); Text(" in text.")
-                }
-                MathView("\\int_0^\\infty e^{-x^2}\\,dx=\\frac{\\sqrt{\\pi}}{2}", true, 24f)
-                MathView("\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}\\begin{pmatrix}x\\\\y\\end{pmatrix}=\\begin{pmatrix}ax+by\\\\cx+dy\\end{pmatrix}", true, 22f)
-                MathView("\\frac{1}{", true)
-            }
+    Window(onCloseRequest = ::exitApplication, title = "spike: math") { MaterialTheme { MathDemoContent() } }
+}
+
+@androidx.compose.runtime.Composable
+fun MathDemoContent() {
+    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Text("Inline: Euler "); MathView("e^{i\\pi}+1=0", false); Text(" and "); MathView("\\sum_{k=1}^n k^2", false); Text(" in text.")
         }
+        MathView("\\int_0^\\infty e^{-x^2}\\,dx=\\frac{\\sqrt{\\pi}}{2}", true, 24f)
+        MathView("\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}\\begin{pmatrix}x\\\\y\\end{pmatrix}=\\begin{pmatrix}ax+by\\\\cx+dy\\end{pmatrix}", true, 22f)
+        MathView("\\frac{1}{", true)
     }
 }

@@ -30,14 +30,50 @@ fun demoBlocks(n: Int = 400): List<SpikeBlock> = List(n) { i ->
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "mermaid") return io.ukata.athena.spike.mermaid.mermaidDemo(args.getOrNull(1))
     if (args.firstOrNull() == "math") return io.ukata.athena.spike.math.mathDemo()
-    reader(args)
+    if (args.firstOrNull() == "selection") return reader(args.drop(1).toTypedArray())
+    launcher()
+}
+
+/** Default entry (packaged app): tabs for every spike demo. */
+fun launcher() = application {
+    Window(onCloseRequest = ::exitApplication, title = "Athena spikes") {
+        MaterialTheme {
+            var tab by remember { mutableStateOf(0) }
+            var epubPath by remember { mutableStateOf<String?>(null) }
+            Column(Modifier.fillMaxSize()) {
+                Row(Modifier.fillMaxWidth().padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("Selection", "EPUB", "Mermaid", "Math").forEachIndexed { i, t ->
+                        androidx.compose.material3.FilterChip(tab == i, { tab = i }, { Text(t) })
+                    }
+                    if (tab == 1) androidx.compose.material3.TextButton({
+                        val d = java.awt.FileDialog(null as java.awt.Frame?, "Open EPUB", java.awt.FileDialog.LOAD)
+                        d.isVisible = true
+                        d.file?.let { epubPath = java.io.File(d.directory, it).path }
+                    }) { Text("Open EPUB…") }
+                }
+                Box(Modifier.weight(1f)) {
+                    when (tab) {
+                        0 -> ReaderContent(null)
+                        1 -> ReaderContent(epubPath)
+                        2 -> io.ukata.athena.spike.mermaid.MermaidDemoContent()
+                        else -> io.ukata.athena.spike.math.MathDemoContent()
+                    }
+                }
+            }
+        }
+    }
 }
 
 fun reader(args: Array<String>) = application {
-    val epub = args.firstOrNull()?.let { io.ukata.athena.spike.epub.EpubBook.open(it) }
-    var chapterIdx by remember { mutableStateOf(0) }
-    Window(onCloseRequest = ::exitApplication, title = "spike: selection") {
-        MaterialTheme {
+    Window(onCloseRequest = ::exitApplication, title = "spike: selection") { MaterialTheme { ReaderContent(args.firstOrNull()) } }
+}
+
+@Composable
+fun ReaderContent(path: String?) {
+    val epub = remember(path) { path?.let { io.ukata.athena.spike.epub.EpubBook.open(it) } }
+    var chapterIdx by remember(path) { mutableStateOf(0) }
+    run {
+        run {
             val blocks = remember(chapterIdx) { epub?.chapter(chapterIdx)?.toSpikeBlocks() ?: demoBlocks() }
             val model = remember { SelectionModel(blocks.map { it.text }) }
             var sel by remember { mutableStateOf<Selection?>(null) }

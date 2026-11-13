@@ -18,12 +18,13 @@ private val DEMOS = listOf(
 
 /** Run: `./kotlin run -m spike -- mermaid [file.mmd]` */
 fun mermaidDemo(file: String?) = application {
-    Window(onCloseRequest = ::exitApplication, title = "spike: mermaid") {
-        MaterialTheme {
-            val srcs = file?.let { listOf(java.io.File(it).readText()) } ?: DEMOS
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                srcs.forEach { MermaidView(it) }
-            }
-        }
+    Window(onCloseRequest = ::exitApplication, title = "spike: mermaid") { MaterialTheme { MermaidDemoContent(file) } }
+}
+
+@androidx.compose.runtime.Composable
+fun MermaidDemoContent(file: String? = null) {
+    val srcs = file?.let { listOf(java.io.File(it).readText()) } ?: DEMOS
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        srcs.forEach { MermaidView(it) }
     }
 }
