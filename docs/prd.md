@@ -1112,7 +1112,7 @@ Linux-specific notes:
 | Math rendering | **JLaTeXMath** (pure Java) renders to an image embedded in Compose | GPL-2.0 *with Classpath Exception*: linking from an Apache-2.0 app is permitted; ship its source/notice. |
 | AI integration | Pluggable OpenAI-compatible client (Ktor), streaming via SSE | |
 | Local notifications | freedesktop Desktop Notifications over D-Bus (`org.freedesktop.Notifications`, e.g. via dbus-java), plus an optional StatusNotifierItem tray icon | Only while the app is running (FR-042). GNOME has no tray icon without an extension, so the tray is optional and notifications must work without it |
-| Secrets | Secret Service API over D-Bus (GNOME Keyring, KWallet), e.g. via dbus-java or java-keyring | If no Secret Service is available (minimal window managers), warn the user and offer a session-only key; never plaintext in the DB or config files |
+| Secrets | `java-keyring` (Linux: Secret Service over D-Bus, i.e. GNOME Keyring or KWallet; it also covers macOS Keychain and Windows Credential Manager for later ports) | If no Secret Service is available (minimal window managers), warn the user and offer a session-only key; never plaintext in the DB or config files |
 | Packaging | `./kotlin package` executable JAR, wrapped by `jpackage` (from a JDK 17+) into a bundled-runtime app image, shipped as **AppImage** and **.deb** for the MVP. A Flatpak (Flathub) is a post-MVP goal and needs the portal-based file access above | The Kotlin Toolchain 0.13 only packages `jar`/`executable-jar`/`aab`; there are no native installers. The `jpackage` step is a small script, run in CI for x64 and arm64. Use `jlink` to ship a trimmed runtime (only the needed JDK modules). PDFium native libraries are bundled per OS/arch |
 | OCR fallback (P2) | Tesseract | Deferred |
 
@@ -1178,6 +1178,24 @@ Suggested logical modules:
     - Lookup orchestration, normalization, the lookup cache, and history (FR-019–FR-022).
 
 Dependency rule: `core-domain` depends on nothing. Feature modules depend on `core-domain` and interfaces only. `document-*`, `render-markdown`, `diagrams`, and platform services (secure storage, notifications) are injected implementations.
+
+### 8.3.1 Portability rules
+
+The MVP ships on Linux only (§8.2), but macOS is the expected first follow-up, with Windows after it. These rules keep that port cheap. They apply from the first commit, and code review enforces them.
+
+1. **OS services sit behind interfaces** defined in `shared`, with Linux implementations in a platform package (e.g. `io.ukata.athena.platform.linux`). The interfaces cover: secrets, notifications, file and folder dialogs, system appearance (light/dark), application directories, file associations or "open with", and opening URLs in the browser. Feature code only sees the interfaces.
+2. **No OS-specific APIs outside platform implementations.** No D-Bus, XDG, `/proc`, shell commands, or `xdg-open` calls in feature or domain code.
+3. **Paths:**
+   - Always use `java.nio.file.Path` APIs. Never concatenate strings with `/`, never hard-code `~` or `/home`.
+   - Application directories come from the directory service (XDG on Linux).
+   - Paths stored in the DB or exports are relative to the data directory and use `/` separators (§7).
+4. **Keyboard shortcuts** are defined once, using a platform "primary modifier" (Ctrl on Linux and Windows, Cmd on macOS), never hard-coded Ctrl. Shortcut labels in the UI come from the same definition.
+5. **Native libraries** (PDFium, the SQLite driver) are loaded through one loader that resolves the library by OS and architecture. Do not add native dependencies that lack macOS and Windows builds without recording a decision.
+6. **Fonts are bundled** (§6.5), so layout and pagination are the same on every OS. Never depend on system fonts for reading content.
+7. **Line endings and encoding:** read and write text as UTF-8 explicitly. Write note files with `\n`, and accept `\r\n` when reading.
+8. **Process and window behaviour** (tray, single-instance, quit vs. close-to-tray) lives in `desktopApp` behind small abstractions, not in feature modules.
+9. **Packaging scripts** are per-OS files under `packaging/<os>/`. Build logic must not assume Linux tools except inside `packaging/linux/`.
+10. **Dependencies:** prefer pure-JVM libraries, or ones that support all three OSes (e.g. `java-keyring` over raw D-Bus bindings). Choosing a Linux-only dependency needs a note in §16.
 
 ## 8.4 Document abstraction
 
@@ -1584,6 +1602,8 @@ At every milestone, the application should remain usable.
 # 17. Revision Notes
 
 Revision 2.2 (2026-11-13):
+
+- **Portability rules (§8.3.1):** Linux-only MVP, but code stays portable for a later macOS port, then Windows. Secrets now use `java-keyring`.
 
 - **Linux-only MVP:** dropped Android (and the Android build target) and deferred macOS/Windows. Linux specifics added to §8.2: Wayland/X11, XDG directories and portals, D-Bus Secret Service and notifications, AppImage/.deb packaging. Acceptance runs on GNOME and KDE, x64 and arm64.
 
