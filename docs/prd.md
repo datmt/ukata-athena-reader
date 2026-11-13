@@ -1,8 +1,8 @@
 # Product Requirements Document
 ## Personal Reading & Learning App — MVP
 
-**Status:** Draft — revision 2 (spec review, 2026-11-13; see §17 Revision notes)  
-**Product type:** Personal, local-first desktop application (Linux, macOS, Windows)  
+**Status:** Draft — revision 2.2 (2026-11-13; see §17 Revision notes)  
+**Product type:** Open-source (Apache-2.0), local-first **Linux desktop** application (macOS/Windows later; no mobile), with an optional paid hosted AI service ("Athena AI")  
 **MVP scope:** P0 + P1 (see §11). Acceptance criteria in §12 cover both.  
 **Primary purpose:** Help users understand, retain, and connect what they read.  
 **Working principle:** Read → Understand → Capture → Revisit
@@ -22,7 +22,9 @@ The application should support two reading experiences:
 1. **Enjoyment reading:** Primarily novels and general nonfiction. Minimize interruptions and provide contextual vocabulary assistance.
 2. **Learning reading:** Primarily technical books and educational material. Help readers understand mechanisms, identify prerequisites, capture insights, and revisit difficult concepts.
 
-The application is intended for personal use. It does not need to support multiple users, subscriptions, collaboration, or a hosted SaaS backend.
+The application is a single-user, local-first app. It is free and open source (Apache-2.0). Everything works without an account: reading, notes, concepts, review, and AI through the user's own API key or a local model.
+
+The only commercial component is **Athena AI**, an optional hosted AI provider. It requires signing in (Keycloak, `sso.ukata.io`) and a paid subscription with optional top-ups. It is specified separately in `docs/athena-ai-service.md`. The app never requires Athena AI, and nothing in the app is locked behind it except the convenience of AI with no setup.
 
 # 2. Goals and Non-goals
 
@@ -45,14 +47,14 @@ The MVP must:
 
 The MVP will not attempt to become:
 
-- A SaaS product or collaborative reading platform.
+- A SaaS product or collaborative reading platform. (The optional Athena AI subscription is a paid AI provider, not a hosted copy of the app; books, notes, and reading data never leave the device except for the per-request AI context.)
 - A replacement for Anki or a full spaced-repetition system.
 - A general-purpose note-taking application.
 - A complete Obsidian replacement.
 - A sophisticated visual knowledge-graph editor.
 - A research paper management system.
 - An AI agent platform with multiple autonomous agents.
-- A cloud-dependent application.
+- A cloud-dependent application. No feature except Athena AI itself needs a server or an account.
 - A full document editing application.
 
 # 3. Target Users and Use Cases
@@ -343,6 +345,14 @@ The application must not require a particular cloud provider.
 
 A provider configuration consists of: display name, base URL, model name, an optional API key (stored in OS secure storage, §9), timeout, and a flag that classifies the provider as *local* or *external*. Endpoints on `localhost`/loopback are classified as local by default. Multiple providers can be configured, and one is the default. The application must expose a "test connection" action.
 
+Provider types:
+
+1. **OpenAI-compatible with API key** (bring your own key): any compatible hosted service.
+2. **OpenAI-compatible, no auth**: local servers such as Ollama or LM Studio.
+3. **Athena AI** (FR-045): built in, so the user doesn't enter a URL or key. It authenticates with the user's Athena account token instead of an API key.
+
+All three use the same client and request pipeline (§8.5). Athena AI differs only in authentication and in how usage and plan errors are shown.
+
 The AI is never required: with no provider configured, every non-AI feature works and the AI actions show a short "configure a provider" hint instead of an error.
 
 **FR-018 — AI privacy**
@@ -365,6 +375,22 @@ AI features must fail gracefully when offline or unavailable.
 On failure (offline, timeout, HTTP error), the selection and any typed question are kept, and the user can retry with one action.
 
 ## 5.4 Novel reading assistance
+
+**FR-045 — Athena AI account (optional)**
+
+The user can sign in to an Athena account to use the hosted Athena AI provider. Signing in is offered only from AI settings and from the "configure a provider" hint. It is never shown at startup, and never needed for anything else.
+
+- **Protocol:** OpenID Connect against Keycloak (`https://sso.ukata.io`), using Authorization Code with PKCE (S256) in the system browser and a loopback redirect (`http://127.0.0.1:<ephemeral port>/callback`), following RFC 8252. The app is a public client and contains no client secret. If the realm cannot accept ephemeral loopback ports, fall back to the OAuth Device Authorization Grant.
+- **Tokens:** the access token is held in memory only. The refresh token is stored in the OS keychain (§9). Refresh is silent. Sign-out revokes the refresh token and clears the keychain entry.
+- **Data the app receives:** only the account's display name, email, plan, and remaining allowance. The app does not sync books, notes, or any library data to the account.
+- **Offline:** signed-in state persists offline. AI requests fail gracefully as with any other provider (FR-018).
+
+**FR-046 — Plan, usage, and purchase**
+
+- AI settings show the current plan, the remaining monthly allowance, top-up credits, and the renewal date. All of this comes from the service's usage endpoint (`athena-ai-service.md`).
+- "Upgrade" and "Buy top-up" open the billing pages in the system browser. There are no in-app payment forms. Payment is handled by the merchant of record.
+- When the allowance is exhausted (HTTP 402) or rate-limited (HTTP 429), the AI panel shows a calm, specific message: what happened, when the allowance renews, and a top-up link. The selection and question are preserved (FR-018). A nag never appears unless the user has just hit a limit.
+- A user can switch providers at any time. An exhausted allowance can be bridged with their own key or a local model, with no lock-in.
 
 **FR-019 — Word lookup**
 
@@ -478,7 +504,7 @@ Support:
 
 Details:
 
-- Flavor: CommonMark + GFM (tables, task lists, strikethrough). Math uses `$…$` / `$$…$$`, rendered with KaTeX.
+- Flavor: CommonMark + GFM (tables, task lists, strikethrough). Math uses `$…$` / `$$…$$`, rendered natively (JLaTeXMath on desktop, §8.2). Unsupported LaTeX falls back to showing the source in monospace.
 - Editing model: a plain-text Markdown editor with live preview (split or toggle). No WYSIWYG editor (§13 risk: "note-taking becomes too complicated").
 - Internal links use stable URIs that remain readable as plain text outside the app, for example `[TLB](reader://concept/<uuid>)` and `[p. 212](reader://book/<uuid>#loc=<encoded>)`. Exported Markdown rewrites them to relative file links or plain text (FR-031).
 - Each note file starts with YAML front matter: `id`, `title`, `origin`, `book`, `source` (human-readable location), `concepts`, `created`, `updated`. That keeps the file self-describing outside the app.
@@ -498,7 +524,7 @@ Initial supported diagram types should include:
 
 Users must be able to edit the Mermaid source and preview the rendered diagram.
 
-Mermaid source is stored inline in the note as a fenced ```` ```mermaid ```` block, so it stays readable outside the app. Rendering runs in a sandboxed web view with no network access. A render error shows the error message beside the source and never loses the source.
+Mermaid source is stored inline in the note as a fenced ```` ```mermaid ```` block, so it stays readable and renderable outside the app (GitHub, Obsidian, VS Code). The app renders diagrams **natively**, with no web engine (§8.2): it parses the Mermaid syntax, lays out the diagram, and draws it in Compose. The native renderer supports a subset. In the MVP that is flowcharts, sequence diagrams, and state diagrams; class and ER diagrams are P2. Diagrams the renderer cannot handle (unsupported type or syntax) show their source with a "preview not available" label. The source is never altered. A render error shows the error message beside the source and never loses the source.
 
 **FR-029 — AI-generated diagrams**
 
@@ -784,7 +810,7 @@ No sparkle or "magic" iconography, and no anthropomorphic avatar. Saved AI notes
 - A command palette (Ctrl/Cmd+K) reaches all actions and screens.
 - Motion is 150–200 ms fades and slides, and none at all when the OS reduce-motion setting is on.
 
-**Shared design tokens.** Colours, type, spacing, and radii are defined once, in a single token file in `shared`. That file generates both the Compose theme and the CSS custom properties injected into the web host (§8.3 `web-host`). This keeps EPUB pages, the Markdown/Mermaid/KaTeX preview, and the Compose interface visually consistent. Mermaid's theme variables are derived from the same tokens.
+**Design tokens.** Colours, type, spacing, and radii are defined once, as a Compose theme in `shared`. Every surface is rendered natively: EPUB text, PDF overlays, Markdown, math, and diagrams. So that single theme styles everything, and there are no CSS mirrors to keep in sync. EPUB publisher styles are mapped onto the theme (fonts and colours are overridable, §8.2).
 
 **Accessibility.** WCAG AA contrast in all themes, including highlights and AI surfaces. UI scaling from 90% to 150%. Every action reachable by keyboard, with visible focus rings. Colour is never the only carrier of meaning (highlights can also carry a label). Screen-reader support in Compose Desktop is limited; test it, and document any gaps.
 
@@ -1058,30 +1084,52 @@ FTS5 virtual tables (external-content, kept in sync by triggers or by the reposi
 
 ## 8.2 Technology stack
 
-**Target platform decision:** the MVP targets **desktop (Linux, macOS, Windows)**. Android is a possible later target, so domain, database, and AI modules are written as Kotlin Multiplatform `commonMain` code with no JVM-desktop or Android APIs in them.
+**Target platform decision:** the MVP targets **Linux desktop only**: x86-64 and arm64, on GNOME and KDE, under Wayland (through XWayland) and X11. Mobile (Android/iOS) is out of scope. macOS and Windows are post-MVP. The JVM keeps them cheap to add later, so platform-specific services (secrets, notifications, file dialogs) still sit behind interfaces, but the MVP implements, tests, and packages Linux only.
+
+Linux-specific notes:
+
+- Compose Desktop (AWT) runs on Wayland through XWayland. Test HiDPI and fractional scaling on GNOME and KDE early. Native-Wayland AWT (JDK Project Wakefield) is not relied on.
+- Follow freedesktop conventions:
+  - XDG base directories: data in `$XDG_DATA_HOME/athena`, config in `$XDG_CONFIG_HOME/athena`, cache in `$XDG_CACHE_HOME/athena`.
+  - A `.desktop` entry and icon, and MIME associations for `application/pdf` and `application/epub+zip` ("Open with Athena").
+  - The system light/dark preference read from the XDG Desktop Portal (`org.freedesktop.appearance color-scheme`).
+  - File dialogs through the portal (FileChooser) where available, so they look native and work in a Flatpak sandbox.
+
+**No embedded browser engine.** The app does not bundle Chromium (no Electron, CEF/JCEF, or KCEF), for footprint reasons (§10 resource targets). All content is rendered natively in Compose. Android is a possible later target, so domain, database, and AI modules are written as Kotlin Multiplatform `commonMain` code with no JVM-desktop or Android APIs in them.
 
 | Component | Choice for desktop MVP | Notes |
 |---|---|---|
 | Build tool | Kotlin Toolchain (Amper) via the `./kotlin` wrapper | No Gradle. Gradle-plugin-only libraries (e.g. SQLDelight, the Compose Desktop packaging plugin) are unavailable; KSP processors are supported |
-| Application | Kotlin Multiplatform: `shared` targets `jvm` + `android`; only `desktopApp` is built and shipped | The Android target is compiled but not shipped. It acts as a guard that keeps common code (`shared/src`) free of JVM-only APIs. Desktop-only code lives in `shared/src@jvm` or `desktopApp` |
+| Application | Kotlin/JVM with Compose Multiplatform Desktop. `shared` is a single-platform (`jvm`) library; `desktopApp` is the executable | No Android or other KMP targets. The module split in §8.3 is kept for structure and testability, not for multiplatform reuse |
 | UI | Compose Multiplatform (Desktop) | |
-| Embedded web engine | JCEF via KCEF (or equivalent Chromium embedding) | Needed for EPUB, Mermaid, and KaTeX. One shared engine, sandboxed, no network access for content |
-| EPUB rendering | EPUB parsed on the JVM; XHTML rendered in the embedded web engine with a reader JS layer (candidates: Readium TS navigator, epub.js, or a minimal custom paginator) | **Readium Kotlin is Android-only and cannot be used on desktop.** Choose in the Milestone 1 spike |
-| PDF rendering | PDFium via JVM bindings (rendering + text with char boxes); Apache PDFBox as fallback for text extraction | Behind the `document-pdf` abstraction; choose in the Milestone 1 spike |
+| Embedded web engine | **None** | Deliberate. See the note above and OD-1's fallback |
+| EPUB rendering | **Native Compose renderer** (`document-epub`): EPUB container/OPF/NCX/nav parsed in `shared`; XHTML parsed with jsoup; a supported CSS subset mapped to Compose text styles; layout with `TextMeasurer`; scroll and paginated modes; custom selection over `TextLayoutResult`; CFIs generated and resolved against the parsed DOM | Scope: reflowable EPUB 2/3. CSS subset: font style/weight/size, text-align, indent, margins, lists, blockquote, images, simple tables, footnote links. Fixed-layout EPUB, scripted content, and complex CSS layouts are out of MVP scope and fall back to a simplified flow. Readium Kotlin is Android-only and not used |
+| PDF rendering | **PDFium** (prebuilt binaries for linux-x64 and linux-arm64) called through the Java Foreign Function & Memory API (final since JDK 22; no JNI glue). Pages are rasterized into Compose `ImageBitmap` tiles; a text layer is built from PDFium char boxes for selection and highlights | PDFium is BSD/Apache licensed and about 5–7 MB per platform. Apache PDFBox is the fallback if PDFium binding proves impractical. Avoid MuPDF (AGPL) |
 | Structured database | SQLite via Room KMP (KSP code generation) with the bundled SQLite driver (`androidx.sqlite:sqlite-bundled`) | Room's annotations only model FTS3/4. FTS5 tables are created in migrations with raw SQL and queried through `@RawQuery` or the driver connection inside the repository layer. Milestone 0 verifies that the bundled driver has FTS5 enabled on linux-arm64/x64, macOS, and Windows; if not, use FTS4 via `@Fts4` |
-| Note content | Markdown files (CommonMark + GFM) | Parser: e.g. JetBrains markdown or commonmark-java |
+| Note content | Markdown files (CommonMark + GFM) | Parser: JetBrains `markdown` or commonmark-java. Rendering: native Compose renderer (e.g. `multiplatform-markdown-renderer`, or a custom renderer over the parser AST) |
 | Search | SQLite FTS5 | |
-| Diagram rendering | Mermaid (JS) in the embedded web engine | Bundled, offline |
-| Math rendering | KaTeX (JS) in the embedded web engine | Bundled, offline |
+| Diagram rendering | **Native Mermaid-subset renderer** (`diagrams` module): a parser for flowchart, sequence, and state syntax; layered graph layout (Eclipse Layout Kernel `elk-core` + layered algorithm, or a small in-house Sugiyama implementation, chosen in the spike); sequence diagrams use a simple column layout; drawn on a Compose `Canvas` | ELK is EPL-2.0 (weak copyleft, file-level), which is compatible with distribution inside an Apache-2.0 app. Mermaid's JS is not used |
+| Math rendering | **JLaTeXMath** (pure Java) renders to an image embedded in Compose | GPL-2.0 *with Classpath Exception*: linking from an Apache-2.0 app is permitted; ship its source/notice. |
 | AI integration | Pluggable OpenAI-compatible client (Ktor), streaming via SSE | |
-| Local notifications | System tray + OS notifications (AWT `TrayIcon` or a native notification library) | Only while the app is running (FR-042) |
-| Secrets | OS keychain: macOS Keychain, Windows Credential Manager, Linux Secret Service (libsecret) | e.g. via java-keyring. If no keychain is available, warn the user and allow an env-var or session-only key; never plaintext in the DB |
-| Packaging | `./kotlin package` executable JAR, wrapped by `jpackage` (from a JDK 17+) into a bundled-runtime app image and installers (deb/rpm, dmg, msi) | The Kotlin Toolchain 0.13 only packages `jar`/`executable-jar`/`aab`; there are no native installers. The `jpackage` step is a small script per OS, run in CI on each OS. JCEF native binaries must be included |
+| Local notifications | freedesktop Desktop Notifications over D-Bus (`org.freedesktop.Notifications`, e.g. via dbus-java), plus an optional StatusNotifierItem tray icon | Only while the app is running (FR-042). GNOME has no tray icon without an extension, so the tray is optional and notifications must work without it |
+| Secrets | Secret Service API over D-Bus (GNOME Keyring, KWallet), e.g. via dbus-java or java-keyring | If no Secret Service is available (minimal window managers), warn the user and offer a session-only key; never plaintext in the DB or config files |
+| Packaging | `./kotlin package` executable JAR, wrapped by `jpackage` (from a JDK 17+) into a bundled-runtime app image, shipped as **AppImage** and **.deb** for the MVP. A Flatpak (Flathub) is a post-MVP goal and needs the portal-based file access above | The Kotlin Toolchain 0.13 only packages `jar`/`executable-jar`/`aab`; there are no native installers. The `jpackage` step is a small script, run in CI for x64 and arm64. Use `jlink` to ship a trimmed runtime (only the needed JDK modules). PDFium native libraries are bundled per OS/arch |
 | OCR fallback (P2) | Tesseract | Deferred |
 
-**Milestone 1 technical spike (time-boxed, before feature work).** Build throwaway prototypes to choose the PDF and EPUB renderers and the web engine. They must prove, on a set of representative files: rendering speed, word- and paragraph-level text selection with stable locations, highlight overlays, CFI round-trip, and a working Mermaid/KaTeX render in the same web engine. If embedded-Chromium integration proves too costly, record the result and re-evaluate the stack (§16, OD-1).
+**Milestone 0 technical spike (time-boxed, before feature work).** Build throwaway prototypes that prove the native stack on the test corpus (OD-1):
 
-The architecture should avoid coupling the domain model to Android or desktop-specific document-rendering APIs.
+- PDFium via FFM renders pages and returns char boxes on linux-arm64 and linux-x64.
+- The window, popovers, and selection behave correctly under Wayland (XWayland) and X11, at 100%, 150%, and 200% scale.
+- The native EPUB renderer lays out a real novel and a technical EPUB with acceptable fidelity, in scroll and paginated modes.
+- Word- and paragraph-level selection across blocks and pages is reliable in Compose for both formats.
+- Highlight overlays render, and CFIs round-trip.
+- A Mermaid flowchart and a sequence diagram render natively.
+- JLaTeXMath renders inline and display math.
+- The §10 resource targets hold.
+
+Record the results. If a component fails, apply the OD-1 fallback.
+
+The domain model must not depend on rendering or OS-specific APIs, so other desktop OSes can be added later without touching it.
 
 ## 8.3 Application modules
 
@@ -1114,8 +1162,14 @@ Suggested logical modules:
 9. `review`
    - Review scheduling and local notifications.
 
-10. `web-host`
-    - The single sandboxed embedded web engine, shared by the EPUB renderer, the Markdown/Mermaid/KaTeX preview, and anything else that needs HTML rendering. It owns the JS↔Kotlin bridge and the content security policy (no network access).
+10. `render-markdown`
+    - Native Markdown rendering (GFM), math rendering (JLaTeXMath behind an interface), and the editor's live preview.
+
+13. `diagrams`
+    - Mermaid-subset parser, layout, and Compose drawing (FR-028).
+
+14. `account`
+    - Athena AI sign-in (OIDC + PKCE), token storage, plan and usage display (FR-045, FR-046). Used only by the Athena AI provider in `ai-client`.
 
 11. `data-portability`
     - Markdown export, JSON export/restore (FR-031, FR-043), and the documented export schema.
@@ -1123,7 +1177,7 @@ Suggested logical modules:
 12. `vocabulary`
     - Lookup orchestration, normalization, the lookup cache, and history (FR-019–FR-022).
 
-Dependency rule: `core-domain` depends on nothing. Feature modules depend on `core-domain` and interfaces only. `document-*`, `web-host`, and platform services (secure storage, notifications) are injected implementations.
+Dependency rule: `core-domain` depends on nothing. Feature modules depend on `core-domain` and interfaces only. `document-*`, `render-markdown`, `diagrams`, and platform services (secure storage, notifications) are injected implementations.
 
 ## 8.4 Document abstraction
 
@@ -1196,7 +1250,7 @@ Because books, personal notes, and reading history may contain private informati
 
 Requirements:
 
-- No account registration.
+- No account registration for the app. An account exists only for the optional Athena AI service (FR-045), and nothing else depends on it.
 - No telemetry by default.
 - No document upload by default.
 - AI requests transmit only selected text and necessary context.
@@ -1205,6 +1259,13 @@ Requirements:
 - Avoid writing document contents or API secrets into application logs.
 - Support deleting local books, notes, annotations, and related data.
 - Provide a complete export mechanism.
+
+**Athena AI privacy** (details in `athena-ai-service.md`):
+
+- Athena AI is an *external* provider. The one-time consent and the provider indicator apply (FR-018).
+- The service processes request content only to produce the response. It does not log or store prompts or responses. Upstream model providers are used under zero-data-retention terms where available. Usage records keep only user ID, timestamp, model tier, and token counts.
+- Usage metering on the server is billing data, not app telemetry. The app itself still sends no telemetry.
+- A public privacy policy and terms of service are required before launch.
 
 The application should not claim that local storage is encrypted unless the implementation actually provides encryption. Device-level security and optional database encryption can be evaluated separately.
 
@@ -1228,6 +1289,16 @@ Indicative targets, used to judge "immediate" and "responsive", measured on a mi
 | Word lookup popover visible (before the AI answer) | < 150 ms |
 | Local search across ~5,000 notes/highlights | < 200 ms |
 | Library with 1,000 books stays usable | grid/list scrolls smoothly |
+
+**Resource targets** (the reason for the no-Chromium decision; checked in Milestone 0 and in CI on release builds):
+
+| Measure | Target |
+|---|---|
+| Installer / app image size (incl. trimmed JVM runtime and PDFium) | ≤ 120 MB per platform |
+| Resident memory, idle at Library | ≤ 250 MB |
+| Resident memory, reading a 50 MB PDF or a large EPUB | ≤ 400 MB |
+| CPU while idle on a page | ~0% (no polling, no animation loops) |
+| Cold start to Library | < 2 s |
 
 AI latency is the provider's, so there is no target for it. The UI must show progress and support cancellation.
 
@@ -1296,8 +1367,8 @@ AI services may be unavailable offline unless the user configures a local infere
 - Understanding markers.
 - Lightweight review scheduling.
 - Local notifications.
-- Mermaid editing and preview.
-- Math (KaTeX) rendering in notes.
+- Mermaid editing and native preview (flowchart, sequence, state).
+- Math rendering in notes (native, JLaTeXMath).
 - Spoiler guard (FR-023).
 
 ## P2 — Improvements
@@ -1314,6 +1385,8 @@ AI services may be unavailable offline unless the user configures a local infere
 - Offline dictionary fallback for word lookup.
 - Full-text search inside book contents.
 - Trash / soft-delete with recovery.
+- Native rendering of Mermaid class and ER diagrams.
+- Fixed-layout EPUB support.
 
 ## Explicitly deferred
 
@@ -1332,7 +1405,7 @@ AI services may be unavailable offline unless the user configures a local infere
 
 The MVP is considered successful when the following end-to-end workflows work reliably. Workflows A and F are P0 gates. Workflows B–E exercise P1 features.
 
-Run every workflow on all three desktop OSes, with at least one external provider and one local provider (e.g. Ollama).
+Run every workflow on Linux, x64 and arm64, under both a GNOME Wayland session and a KDE (or X11) session, with at least one external provider and one local provider (e.g. Ollama).
 
 ## Workflow A — Understand a technical passage
 
@@ -1403,8 +1476,12 @@ Run every workflow on all three desktop OSes, with at least one external provide
 | Too many features delay delivery | Enforce P0/P1 boundaries |
 | PDF and EPUB behave differently | Keep separate rendering engines behind a shared domain interface |
 | Export loses important metadata | Version the JSON export format and test round-trip restoration |
-| No mature EPUB renderer for Compose Desktop (Readium Kotlin is Android-only) | Time-boxed Milestone 1 spike; render EPUB in an embedded web engine; fall back to re-evaluating the stack (OD-1) |
-| Embedded Chromium (JCEF/KCEF) adds size, packaging, and native-dependency complexity on three OSes | Use one shared web engine for EPUB, Mermaid, and KaTeX; prove packaging on all three OSes in Milestone 1 |
+| Native EPUB renderer underestimates CSS/layout complexity | Strict supported-CSS subset; simplified fallback flow; test corpus in Milestone 0; fixed-layout EPUB out of scope |
+| Cross-block text selection in Compose is hard (no built-in multi-paragraph selection with offsets) | Custom selection layer over `TextLayoutResult`s, proven first in Milestone 0; it is the highest-risk item |
+| Native Mermaid renderer covers only part of Mermaid | Mermaid source stays canonical and portable; unsupported diagrams show their source; ship flowchart/sequence/state first |
+| JVM baseline memory makes the app feel heavy | Resource targets (§10), trimmed runtime, tuned heap flags (e.g. `-XX:+UseSerialGC` or ZGC with a small max heap), tile-based PDF rendering with a bounded bitmap cache |
+| Hosted AI costs exceed subscription revenue | Hard per-user allowance, model routing by request type, top-ups for heavy users, per-request context cap (`athena-ai-service.md`) |
+| Upstream provider keys leak through the open-source client | Upstream keys live only on the server; the client authenticates with short-lived user tokens |
 | Stored locations break when renderers or files change | `SourceLocation` stores a text-quote anchor alongside CFI/page rects; re-anchor on failure (§7.0) |
 | Spoilers leak through the model's prior knowledge of famous books | Hard context cutoff plus prompt instruction; UI says "spoiler-guarded", not "spoiler-free" (FR-023) |
 | Book text contains prompt-injection content | Treat book text as untrusted, delimit it, never auto-apply AI output (§8.5) |
@@ -1436,10 +1513,10 @@ Build incrementally.
 Milestones are ordered so that every P0 item is in place by the end of Milestone 3, and every P1 item by the end of Milestone 5. P2 items come after the MVP.
 
 **Milestone 0 — Technical spike (time-boxed)**
-- PDF renderer, EPUB renderer, and embedded web engine prototypes (§8.2).
-- Packaging smoke test on Linux, macOS, and Windows (executable JAR + `jpackage`, including JCEF natives).
+- Native stack prototypes: PDFium via FFM, native EPUB renderer, cross-block selection, Mermaid-subset render, JLaTeXMath (§8.2).
+- Packaging smoke test: AppImage and .deb for x64 and arm64 (executable JAR + `jlink` + `jpackage`, PDFium natives included), measured against the §10 resource targets.
 - Room on the Kotlin Toolchain: KSP setup, schema export, and an FTS5 table on the bundled driver.
-- Confirm linux-arm64 builds exist for PDFium and JCEF/KCEF (the development machine is aarch64).
+- Confirm PDFium binaries and FFM binding work on linux-arm64 (the development machine).
 - Exit: renderer choices recorded; OD-1 closed.
 
 **Milestone 1 — Reading foundation**
@@ -1461,7 +1538,7 @@ Milestones are ordered so that every P0 item is in place by the end of Milestone
 - Save explanations as AI-origin notes.
 
 **Milestone 3 — Personal knowledge and portability**
-- Markdown notes (front matter, atomic save, live preview, KaTeX, Mermaid preview).
+- Markdown notes (front matter, atomic save, native live preview, math, Mermaid-subset preview).
 - My Notes screen with FTS search and filters.
 - Navigation from a note back to its source.
 - Markdown export, JSON export, and restore.
@@ -1481,6 +1558,12 @@ Milestones are ordered so that every P0 item is in place by the end of Milestone
 - Tray and daily-digest notifications.
 - ✅ End of MVP. Workflow D passes.
 
+**Milestone 6 — Athena AI (public release)**
+- Account sign-in (FR-045), Athena AI provider, plan/usage display and limit handling (FR-046).
+- Server built per `athena-ai-service.md` (separate, closed-source repository).
+- Privacy policy, terms, and billing (merchant of record) live.
+- Signed AppImage and .deb releases (x64, arm64), optionally an apt repository, plus an update check that only fetches a public version manifest and sends no identifiers.
+
 **After MVP (P2)**
 - AI concept and relationship suggestions, AI-generated Mermaid diagrams, reading ruler, paragraph focus, OCR, offline dictionary, and the other items listed in §11 P2.
 
@@ -1490,14 +1573,22 @@ At every milestone, the application should remain usable.
 
 | ID | Decision | Current leaning | Decide by |
 |---|---|---|---|
-| OD-1 | EPUB/PDF renderer and web engine for desktop: KCEF + Readium TS navigator vs. epub.js vs. a custom paginator; PDFium bindings vs. PDFBox. If embedded Chromium proves too costly, consider whether a web-based shell (e.g. Tauri with pdf.js + a Readium TS navigator) is a better fit than Compose Desktop. | KMP + Compose Desktop + KCEF | End of Milestone 0 |
+| OD-1 | Native rendering stack: confirm PDFium-via-FFM, the native EPUB renderer design (pagination approach, CSS subset, selection layer), ELK vs. in-house layered layout for diagrams. **Fallback if the native EPUB renderer fails the spike:** the system WebKitGTK, which is not bundled and adds no installer size. It still costs memory, and embedding it in an AWT window is awkward, so it is only used with explicit sign-off. Bundled Chromium remains excluded. | Native Compose for everything; no browser engine | End of Milestone 0 |
 | OD-2 | Default AI provider and model recommendations to document (cloud and local) | OpenAI-compatible; document Ollama setup | Milestone 2 |
 | OD-3 | Lemmatization for vocabulary normalization: rule-based per language vs. asking the AI to return a lemma | AI returns a lemma; fallback is a lowercase match | Milestone 4 |
 | OD-4 | Languages supported for "preferred explanation language" and book source language at launch | English books; any target language the model supports | Milestone 4 |
 | OD-5 | Optional encryption of the database at rest (SQLCipher) | Not in MVP; rely on OS disk encryption (§9) | Post-MVP |
-| OD-6 | Licensing/distribution: personal build only vs. public open-source release (affects bundling of PDFium, Chromium, and fonts) | Personal; keep dependencies license-compatible with open source | Milestone 0 |
+| OD-6 | ~~Licensing/distribution~~ **Decided:** the app is open source under Apache-2.0. Revenue comes from the optional Athena AI subscription (monthly plan with an allowance, plus top-ups), served by a closed-source service. Trademark the product name and logo, and do a name clearance search ("Athena" is crowded). Third-party dependencies must be Apache-2.0-compatible (no AGPL, e.g. MuPDF). | Closed | — |
+| OD-7 | Athena AI pricing (plan price, allowance size, top-up packs), merchant of record (Paddle vs. Lemon Squeezy), and launch regions | See `athena-ai-service.md` §9 | Before Milestone 6 |
 
 # 17. Revision Notes
+
+Revision 2.2 (2026-11-13):
+
+- **Linux-only MVP:** dropped Android (and the Android build target) and deferred macOS/Windows. Linux specifics added to §8.2: Wayland/X11, XDG directories and portals, D-Bus Secret Service and notifications, AppImage/.deb packaging. Acceptance runs on GNOME and KDE, x64 and arm64.
+
+- **Business model (OD-6 closed):** Apache-2.0 open-source app; optional paid Athena AI provider with Keycloak sign-in (FR-045, FR-046), specified in `docs/athena-ai-service.md`; Milestone 6 added; §1, §2.2, and §9 updated so accounts exist only for Athena AI.
+- **No bundled browser engine:** removed JCEF/KCEF. EPUB, Markdown, math, and Mermaid are now rendered natively in Compose (§8.2); Mermaid is a native subset (FR-028); math uses JLaTeXMath. Added resource targets (§10). Replaced the `web-host` module with `render-markdown`, `diagrams`, and `account`. OD-1 rewritten with an OS-web-view fallback.
 
 Revision 2 (spec review, 2026-11-13) made these changes to the original draft:
 

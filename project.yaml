@@ -1,6 +1,3 @@
 modules:
-  # androidApp is excluded for the desktop-first MVP. `shared` still targets android
-  # so the compiler keeps common code free of JVM-only APIs (see PRD §8.2).
-  # Re-add `- androidApp` here to build the Android app.
   - desktopApp
   - shared

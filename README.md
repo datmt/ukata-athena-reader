@@ -1,14 +1,12 @@
 # Kotlin Multiplatform project
 
-This project is targeting Android, Desktop (JVM), built with
+This project targets Desktop (JVM), Linux first, built with
 the [Kotlin Toolchain](https://kotlin-toolchain.org/latest/).
 
-- [/androidApp](./androidApp) contains the Android application.
 - [/desktopApp](./desktopApp) contains the desktop (JVM) application.
 - [/shared](./shared) holds the code shared across your applications — Compose UI,
   business logic, and platform-specific implementations. [src](./shared/src) is for common code; the
-  sibling `src@<platform>` folders (for example `src@android`) hold code compiled only for the platform named in the
-  folder.
+  sibling `src@jvm` folder holds JVM-specific code.
 
 The `kotlin` (macOS/Linux) and `kotlin.bat` (Windows) scripts in the project root are self-bootstrapping wrappers for
 the Kotlin Toolchain: they download the pinned toolchain version on first use, so no separate installation is required.
@@ -18,7 +16,6 @@ Build the whole project with `./kotlin build`.
 
 Run each module from the command line:
 
-- Android app: `./kotlin run -m androidApp`
 - Desktop app: `./kotlin run -m desktopApp`
 
 ### Testing

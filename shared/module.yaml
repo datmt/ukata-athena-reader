@@ -1,6 +1,6 @@
 product:
   type: kmp/lib
-  platforms: [android, jvm]
+  platforms: [jvm]
 
 dependencies:
   - $compose.runtime
@@ -12,9 +12,6 @@ dependencies:
   - $compose.hotReload.runtimeApi
   - $libs.androidx.lifecycle.viewmodel.compose
   - $libs.androidx.lifecycle.runtime.compose
-
-dependencies@android:
-  - $compose.uiTooling
 
 settings:
   compose:
