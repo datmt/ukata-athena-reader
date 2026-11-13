@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import io.ukata.athena.spike.selection.*
+import io.ukata.athena.spike.epub.toSpikeBlocks
 
 private val words = "the quick brown fox jumps over a lazy dog while reading about layered graph layout and selection models".split(' ')
 
@@ -26,13 +27,20 @@ fun demoBlocks(n: Int = 400): List<SpikeBlock> = List(n) { i ->
     }
 }
 
-fun main() = application {
+fun main(args: Array<String>) = application {
+    val epub = args.firstOrNull()?.let { io.ukata.athena.spike.epub.EpubBook.open(it) }
+    var chapterIdx by remember { mutableStateOf(0) }
     Window(onCloseRequest = ::exitApplication, title = "spike: selection") {
         MaterialTheme {
-            val blocks = remember { demoBlocks() }
+            val blocks = remember(chapterIdx) { epub?.chapter(chapterIdx)?.toSpikeBlocks() ?: demoBlocks() }
             val model = remember { SelectionModel(blocks.map { it.text }) }
             var sel by remember { mutableStateOf<Selection?>(null) }
             Column(Modifier.fillMaxSize()) {
+                if (epub != null) Row(Modifier.fillMaxWidth().padding(4.dp)) {
+                    androidx.compose.material3.TextButton({ if (chapterIdx > 0) { chapterIdx--; sel = null } }) { Text("◀") }
+                    Text("${epub.title ?: "?"} — ${epub.spine[chapterIdx].title ?: "chapter ${chapterIdx + 1}"} (${chapterIdx + 1}/${epub.spine.size})", Modifier.weight(1f).padding(8.dp))
+                    androidx.compose.material3.TextButton({ if (chapterIdx < epub.spine.lastIndex) { chapterIdx++; sel = null } }) { Text("▶") }
+                }
                 SelectableColumn(blocks, sel, { sel = it }, Modifier.weight(1f))
                 val s = sel
                 Text(

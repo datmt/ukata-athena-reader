@@ -25,7 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class SpikeBlock(val text: String, val style: TextStyle)
+class SpikeBlock(val text: String, val style: TextStyle, val rich: androidx.compose.ui.text.AnnotatedString? = null)
 
 private const val H_PAD = 24f      // dp, must match padding below
 private const val V_GAP = 6        // dp between blocks (inside item so hit-test has no gaps)
@@ -110,7 +110,7 @@ fun SelectableColumn(
             itemsIndexed(blocks, key = { i, _ -> i }) { i, b ->
                 Box(Modifier.padding(horizontal = H_PAD.dp, vertical = (V_GAP / 2).dp)) {
                     BasicText(
-                        b.text, style = b.style,
+                        b.rich ?: androidx.compose.ui.text.AnnotatedString(b.text), style = b.style,
                         onTextLayout = { layouts[i] = it },
                         modifier = Modifier.drawBehind {
                             val r = sel?.rangeIn(i, b.text.length) ?: return@drawBehind

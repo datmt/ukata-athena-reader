@@ -6,7 +6,7 @@
 |---|---|---|
 | 1 | Cross-block text selection | model + tests done; Compose layer compiles, awaiting human feel-check |
 | 2 | PDFium via FFM (linux-arm64) | done (binding + test green; bundling pending) |
-| 3 | Native EPUB layout | todo |
+| 3 | Native EPUB layout | parser + view done, tests green; needs real-EPUB check |
 | 4 | Mermaid subset (ELK vs in-house) | todo |
 | 5 | JLaTeXMath | todo |
 | 6 | Room + FTS5 | todo |
@@ -22,7 +22,9 @@ Results and decisions: `spike/RESULTS.md`.
 
 - Spike 2: FFM PDFium binding + test (uses system LibreOffice libpdfiumlo.so, no download). 7 ms render, text + char boxes OK.
 
+- Spike 3: `EpubBook` (JDK-only zip+StAX, lazy chapters, flat block model + spans), `toSpikeBlocks` view, chapter nav in spike app. Run: `./kotlin run -m spike -- book.epub`.
+
 ### Next
 1. Human check of spike 1 (`./kotlin run -m spike`; drag, auto-scroll, double/triple/shift-click, `-Dsun.java2d.uiScale=1.5`).
-2. Spike 2 done. Next: EPUB layout, Mermaid, JLaTeXMath, Room+FTS5, packaging.
+2. Spikes 2-3 done. Next: Mermaid, JLaTeXMath, Room+FTS5, packaging.
 3. Open questions: test corpus (public-domain vs own files), spike time-box (proposed 1-2 weeks).
