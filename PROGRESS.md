@@ -8,7 +8,7 @@
 | 2 | PDFium via FFM (linux-arm64) | done (binding + test green; bundling pending) |
 | 3 | Native EPUB layout | parser + view done, tests green; needs real-EPUB check |
 | 4 | Mermaid subset (ELK vs in-house) | done: in-house; parser+layout tests green; awaiting human look |
-| 5 | JLaTeXMath | todo |
+| 5 | JLaTeXMath | done; tests green; awaiting human look |
 | 6 | Room + FTS5 | done (linux-arm64; other OS unverified) |
 | 7 | AppImage/.deb + resource targets | todo |
 | 8 | Wayland/X11 + HiDPI | human check |
@@ -28,7 +28,9 @@ Results and decisions: `spike/RESULTS.md`.
 
 - Spike 4: in-house `spike/src/mermaid/` (no ELK): flowchart + sequence parsers, Sugiyama-style layout, Compose Canvas `MermaidView`. 6 tests green. Run: `./kotlin run -m spike -- mermaid [file.mmd]`.
 
+- Spike 5: JLaTeXMath 1.0.7 (670 KB jar, only new dep) → ARGB bitmap → Compose `Image` (`spike/src/math/`). 3 tests green, ~0.5 ms/formula warm. Run: `./kotlin run -m spike -- math`.
+
 ### Next
 1. Human check of spike 1 (`./kotlin run -m spike`; drag, auto-scroll, double/triple/shift-click, `-Dsun.java2d.uiScale=1.5`).
-2. Spikes 2, 3, 6 done. Next: JLaTeXMath (5), packaging (7). Human look at spike 4 demo.
+2. Spikes 2, 3, 6 done. Next: packaging (7). Human look at spike 4 and 5 demos.
 3. Open questions: test corpus (public-domain vs own files), spike time-box (proposed 1-2 weeks).

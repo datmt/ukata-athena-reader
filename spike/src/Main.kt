@@ -29,6 +29,7 @@ fun demoBlocks(n: Int = 400): List<SpikeBlock> = List(n) { i ->
 
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "mermaid") return io.ukata.athena.spike.mermaid.mermaidDemo(args.getOrNull(1))
+    if (args.firstOrNull() == "math") return io.ukata.athena.spike.math.mathDemo()
     reader(args)
 }
 

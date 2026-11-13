@@ -6,6 +6,7 @@ dependencies:
   - $compose.material3
   - $compose.ui
   - $libs.kotlinx.coroutines.swing
+  - org.scilab.forge:jlatexmath:1.0.7
 
 settings:
   compose: enabled

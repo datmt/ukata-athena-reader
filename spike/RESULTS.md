@@ -29,3 +29,9 @@
 - Sequence: participant/actor (+`as`), `->> -->> -> --> -x -)`, self messages, auto column widths.
 - Unsupported (→ source shown with "Preview not available"): subgraph, style/classDef/click, loop/alt/opt/par/Note/box, other diagram types. Malformed input → error message + source.
 - **Not done / open:** state diagrams (PRD MVP; can reuse flowchart layout, add `[*]` + `A --> B : ev` parser), Note over, activations, node shapes beyond five, big-graph timing, visual quality (human check).
+
+## 5. JLaTeXMath
+- `org.scilab.forge:jlatexmath:1.0.7` resolves from Maven Central, 670 KB, pure Java (AWT, headless-safe). `renderMath(latex, px, display)` → `BufferedImage` + baseline; `MathView` converts to a Compose `ImageBitmap`, rendered at density-scaled px so it stays sharp at 150%/200%.
+- Inline vs display style verified (display is taller); fractions, sums, integrals, roots, matrices render. Warm render ~0.5 ms/formula (50-formula test), so no caching needed for notes; cache per (latex, size) in the real app anyway.
+- Gotchas: unknown commands throw `ParseException` (good), but **unclosed `{` is silently accepted**, so `requireBalanced` pre-checks. Inline baseline alignment with surrounding text is exposed (`baseline`) but not wired into a text flow yet (demo uses Row centering). Colour is a render-time parameter (re-render on theme change).
+- **Open:** inline math inside flowing Markdown text (needs an `InlineTextContent` placeholder using width/height/baseline), cold-start time, human visual check, GPL+Classpath notice in distribution.
