@@ -35,3 +35,10 @@
 - Inline vs display style verified (display is taller); fractions, sums, integrals, roots, matrices render. Warm render ~0.5 ms/formula (50-formula test), so no caching needed for notes; cache per (latex, size) in the real app anyway.
 - Gotchas: unknown commands throw `ParseException` (good), but **unclosed `{` is silently accepted**, so `requireBalanced` pre-checks. Inline baseline alignment with surrounding text is exposed (`baseline`) but not wired into a text flow yet (demo uses Row centering). Colour is a render-time parameter (re-render on theme change).
 - **Open:** inline math inside flowing Markdown text (needs an `InlineTextContent` placeholder using width/height/baseline), cold-start time, human visual check, GPL+Classpath notice in distribution.
+
+## 7. Packaging (linux-arm64, local build)
+- `packaging/linux/build.sh`: `./kotlin package` jar -> `jdeps` module list -> `jlink` (java.base, java.desktop, jdk.unsupported; 59 MB runtime) -> `jpackage --type app-image` -> `.deb` via `dpkg-deb` (jpackage deb needs fakeroot, absent) and tar.gz.
+- Sizes (spike app, includes Compose+Skiko+JLaTeXMath+Room): app image 101 MB, .deb 73 MB, tar.gz 77 MB. Skiko native + Compose dominate; no PDFium bundled yet (+~6 MB).
+- Gotcha: Amper `executable-jar` flattens libs by filename; androidx vs org.jetbrains `runtime-desktop` collide and the stub wins -> `NoClassDefFoundError: Composer`. Script picks the largest jar per name.
+- Launch reaches Compose (headless box: HeadlessException only). Startup time / RSS not measured (no display here); human check.
+- **Open:** AppImage needs `appimagetool` download (needs approval); x64 build needs an x64 machine (jlink/jpackage are per-arch, no cross); `.deb` Depends list untested on a clean system.
