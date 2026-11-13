@@ -17,3 +17,10 @@ Results and decisions: `spike/RESULTS.md`.
 
 ### Log
 - Spike 1: `SelectionModel` (pure Kotlin: anchors, word/paragraph, cross-block text, per-block ranges), 9 unit tests green. `SelectableColumn`: single pointer handler, hit-test over visible `LazyColumn` items, double/triple click, shift-extend, drag auto-scroll, per-block highlight via `getPathForRange`. Run: `./kotlin run -m spike`.
+- Repo published: https://github.com/datmt/ukata-athena-reader (public, `main`). Note: `docs/athena-ai-service.md` is public too; review whether it should be.
+- PRD path in `../AGENTS.md` fixed to `athena-reader/docs/prd.md`.
+
+### Next
+1. Human check of spike 1 (`./kotlin run -m spike`; drag, auto-scroll, double/triple/shift-click, `-Dsun.java2d.uiScale=1.5`).
+2. Spike 2: PDFium via FFM on linux-arm64 (pdfium-binaries download needs approval), then EPUB layout, Mermaid, JLaTeXMath, Room+FTS5, packaging.
+3. Open questions: test corpus (public-domain vs own files), spike time-box (proposed 1-2 weeks).
