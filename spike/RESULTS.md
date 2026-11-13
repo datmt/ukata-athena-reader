@@ -15,3 +15,10 @@
 - Handled: percent-encoded/relative hrefs, whitespace collapsing, `<pre>`, HTML named entities without DTD (small map; unknown → space), blockquote nesting, skipped head/script/style/svg/math. 4 unit tests green.
 - **Not covered (decide before M1):** images render as `[image: alt]` placeholder; tables flattened to paragraphs; CSS ignored (deliberate: reader controls typography); no fixed-layout/RTL/vertical text; no footnote popups; link navigation not wired; EPUB CFI not implemented (block+offset is our stable location, needs mapping if CFI export is required).
 - **Pending human/corpus check:** no real EPUB on this machine; run `./kotlin run -m spike -- path/to/book.epub` with a few real books (novel, technical with code, one with many images).
+
+## 6. Room + FTS5 (module `spikedb`, throwaway)
+- **Works on linux-arm64:** Room 2.8.5 (KSP via `settings.kotlin.ksp` in module.yaml, processor `androidx.room:room-compiler`) + `androidx.sqlite:sqlite-bundled:2.6.2`. Schema JSON exported to `spikedb/schemas/`. WAL mode on.
+- FTS5 is available in the bundled driver: external-content `note_fts` (unicode61, diacritics folded) created with raw SQL in a `RoomDatabase.Callback.onCreate`, synced by insert/update/delete triggers. Verified: terms, prefix `layo*`, column filter `title:graph`, `bm25` ranking, update/delete sync. Query on 5k notes: <1 ms.
+- Gotcha: Room checks `@Query` SQL at compile time and does not know FTS5 tables, so search uses `@RawQuery` with `RoomRawQuery` (wrapped by an extension function). Raw-SQL objects must also be created in migrations (Room's schema JSON does not describe them).
+- Gotcha: bundled driver loads its native lib via `System.loadLibrary` → add `--enable-native-access=ALL-UNNAMED` to app JVM args (with spike 2).
+- **Open:** macOS/Windows/x64 not testable here; PRD fallback is `@Fts4`. Migration test for a raw-SQL FTS table still to do in M1.

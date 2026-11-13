@@ -9,7 +9,7 @@
 | 3 | Native EPUB layout | parser + view done, tests green; needs real-EPUB check |
 | 4 | Mermaid subset (ELK vs in-house) | todo |
 | 5 | JLaTeXMath | todo |
-| 6 | Room + FTS5 | todo |
+| 6 | Room + FTS5 | done (linux-arm64; other OS unverified) |
 | 7 | AppImage/.deb + resource targets | todo |
 | 8 | Wayland/X11 + HiDPI | human check |
 
@@ -24,7 +24,9 @@ Results and decisions: `spike/RESULTS.md`.
 
 - Spike 3: `EpubBook` (JDK-only zip+StAX, lazy chapters, flat block model + spans), `toSpikeBlocks` view, chapter nav in spike app. Run: `./kotlin run -m spike -- book.epub`.
 
+- Spike 6: new throwaway module `spikedb` (Room 2.8.5 + KSP + bundled SQLite). FTS5 external-content table + triggers works, test green.
+
 ### Next
 1. Human check of spike 1 (`./kotlin run -m spike`; drag, auto-scroll, double/triple/shift-click, `-Dsun.java2d.uiScale=1.5`).
-2. Spikes 2-3 done. Next: Mermaid, JLaTeXMath, Room+FTS5, packaging.
+2. Spikes 2, 3, 6 done. Next: Mermaid, JLaTeXMath, Room+FTS5, packaging.
 3. Open questions: test corpus (public-domain vs own files), spike time-box (proposed 1-2 weeks).

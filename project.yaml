@@ -2,3 +2,4 @@ modules:
   - desktopApp
   - shared
   - spike
+  - spikedb

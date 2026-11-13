@@ -1,0 +1,16 @@
+product: jvm/lib
+
+dependencies:
+  - androidx.room:room-runtime:2.8.5
+  - androidx.sqlite:sqlite-bundled:2.6.2
+  - $libs.kotlinx.coroutines.core
+
+settings:
+  kotlin:
+    ksp:
+      processors:
+        - androidx.room:room-compiler:2.8.5
+      processorOptions:
+        room.schemaLocation: ./schemas
+  jvm:
+    release: 25
