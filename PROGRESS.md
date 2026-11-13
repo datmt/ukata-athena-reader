@@ -5,7 +5,7 @@
 | # | Spike | Status |
 |---|---|---|
 | 1 | Cross-block text selection | model + tests done; Compose layer compiles, awaiting human feel-check |
-| 2 | PDFium via FFM (linux-arm64) | todo |
+| 2 | PDFium via FFM (linux-arm64) | done (binding + test green; bundling pending) |
 | 3 | Native EPUB layout | todo |
 | 4 | Mermaid subset (ELK vs in-house) | todo |
 | 5 | JLaTeXMath | todo |
@@ -20,7 +20,9 @@ Results and decisions: `spike/RESULTS.md`.
 - Repo published: https://github.com/datmt/ukata-athena-reader (public, `main`). Note: `docs/athena-ai-service.md` is public too; review whether it should be.
 - PRD path in `../AGENTS.md` fixed to `athena-reader/docs/prd.md`.
 
+- Spike 2: FFM PDFium binding + test (uses system LibreOffice libpdfiumlo.so, no download). 7 ms render, text + char boxes OK.
+
 ### Next
 1. Human check of spike 1 (`./kotlin run -m spike`; drag, auto-scroll, double/triple/shift-click, `-Dsun.java2d.uiScale=1.5`).
-2. Spike 2: PDFium via FFM on linux-arm64 (pdfium-binaries download needs approval), then EPUB layout, Mermaid, JLaTeXMath, Room+FTS5, packaging.
+2. Spike 2 done. Next: EPUB layout, Mermaid, JLaTeXMath, Room+FTS5, packaging.
 3. Open questions: test corpus (public-domain vs own files), spike time-box (proposed 1-2 weeks).
