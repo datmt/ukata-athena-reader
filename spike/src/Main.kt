@@ -27,7 +27,12 @@ fun demoBlocks(n: Int = 400): List<SpikeBlock> = List(n) { i ->
     }
 }
 
-fun main(args: Array<String>) = application {
+fun main(args: Array<String>) {
+    if (args.firstOrNull() == "mermaid") return io.ukata.athena.spike.mermaid.mermaidDemo(args.getOrNull(1))
+    reader(args)
+}
+
+fun reader(args: Array<String>) = application {
     val epub = args.firstOrNull()?.let { io.ukata.athena.spike.epub.EpubBook.open(it) }
     var chapterIdx by remember { mutableStateOf(0) }
     Window(onCloseRequest = ::exitApplication, title = "spike: selection") {

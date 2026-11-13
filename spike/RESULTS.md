@@ -22,3 +22,10 @@
 - Gotcha: Room checks `@Query` SQL at compile time and does not know FTS5 tables, so search uses `@RawQuery` with `RoomRawQuery` (wrapped by an extension function). Raw-SQL objects must also be created in migrations (Room's schema JSON does not describe them).
 - Gotcha: bundled driver loads its native lib via `System.loadLibrary` → add `--enable-native-access=ALL-UNNAMED` to app JVM args (with spike 2).
 - **Open:** macOS/Windows/x64 not testable here; PRD fallback is `@Fts4`. Migration test for a raw-SQL FTS table still to do in M1.
+
+## 4. Mermaid subset (in-house, no ELK)
+- **Decision: in-house.** ~350 lines pure Kotlin, zero new dependencies (ELK would add a multi-MB EPL dep and a Java-style API for what a small layered layout covers). Parser/layout are Compose-free and unit-tested; only `MermaidView` touches Compose (text measured via `TextMeasurer`, drawn on `Canvas`).
+- Flowchart: `graph|flowchart TD/TB/LR/RL/BT`; shapes rect/round/stadium/circle/diamond; edges `-->`, `---`, `-.->`, `==>`, labels `|x|` and `-- x -->`; chains, `;`, `<br/>`. Layout: DFS cycle removal, longest-path layering, dummy nodes for long edges, 6 barycenter sweeps, neighbour-average x. Edges are polylines through dummy nodes (no splines, no port spreading, no edge-label collision avoidance).
+- Sequence: participant/actor (+`as`), `->> -->> -> --> -x -)`, self messages, auto column widths.
+- Unsupported (→ source shown with "Preview not available"): subgraph, style/classDef/click, loop/alt/opt/par/Note/box, other diagram types. Malformed input → error message + source.
+- **Not done / open:** state diagrams (PRD MVP; can reuse flowchart layout, add `[*]` + `A --> B : ev` parser), Note over, activations, node shapes beyond five, big-graph timing, visual quality (human check).
